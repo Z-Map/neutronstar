@@ -4,7 +4,10 @@
 
 import re
 import os.path as Path
-from os import scandir as ScanDir
+try:
+	from os import scandir as ScanDir
+except ImportError:
+	from os import listdir as ScanDir
 
 from .setting import SettingManager as SMgr
 
