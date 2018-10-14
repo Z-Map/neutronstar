@@ -69,34 +69,29 @@ class SourceDir(Sources):
 	"""docstring for SourceDir."""
 
 	@staticmethod
-	def _RecursiveFind(adir, num, f_filtr = None):
+	def _RecursiveFind(adir, num, f_filter = None):
 		dlst = []
 		ret = []
 		with ScanDir(adir) as it:
 			for entry in it:
 				if entry.is_dir():
 					dlst.append(entry.path)
-				elif not fifltr or f_filter(entry.name):
+				elif not f_filter or f_filter(entry.name):
 					ret.append(entry.path)
 		if num != 0:
 			for aodir in dlst:
 				ret.extend(SourceDir._RecursiveFind(
-					Path.join(adir, aodir), num - 1, fifltr))
+					Path.join(adir, aodir), num - 1, f_filter))
 		return ret
 
 	@staticmethod
 	def get_names(self):
+		recursive = self.recursive
+		if recursive and not isinstance(recursive, int):
+			recursive = self.settings.get("SourceDir.recursion.default", 32)
 		path_filter = self.path_filter
-		if path_filter is not None:
-			if isinstance(path_filter, re.Pattern):
-				path_filter = path_filter.fullmatch
-			if not callable(path_filter):
-				raise Exception("Path filter is not callable")
-		if self.recursive:
-			if not isinstance(self.recursive, int):
-				self.recursive = self.settings.get("SourceDir.recursion.default", 32)
-		else:
-			self.recursive = 0
+		if isinstance(path_filter, re.Pattern):
+			path_filter = path_filter.fullmatch
 		return SourceDir._RecursiveFind(self.basedir + self.directory, self.recursive, path_filter)
 
 	def __init__(self, directory,
@@ -106,12 +101,14 @@ class SourceDir(Sources):
 		if path_filter is not None:
 			if isinstance(path_filter, str):
 				path_filter = re.compile(path_filter)
-		self.recursive = recursive
+			elif not isinstance(path_filter, re.Pattern) and not callable(path_filter):
+				raise Exception("Path filter is not callable")
 		self.path_filter = path_filter
-		super(SourceDir, self).__init__(directory, names=SourceDir.get_names,
+		self.recursive = recursive if recursive else 0
+		super(SourceDir, self).__init__(directory,
 			basedir = basedir, namespace = namespace,
 			settings = settings, name = name)
 
-	def refresh(self):
+	def GetAll(self):
 		self._names = SourceDir.get_names(self)
-		return self
+		return super().GetAll()

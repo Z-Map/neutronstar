@@ -24,6 +24,6 @@ class Module(object):
 		self.slots[slot_name] = (src, toolchain)
 		return self
 
-	def build(self):
+	def build(self, target):
 		
 		return True
