@@ -6,10 +6,13 @@ import os.path as Path
 
 class Compiler(object):
 
-	def __init__(self, name):
+	def __init__(self, name, settings = None):
+		if settings is None:
+			settings = SMgr.GetCurrent().Settings
+		self.smgr = settings
 		self.name = name
 
-	def compile(self, target):
+	def compile(self, source):
 		raise NotImplementedError("You need to use a valid compiler")
 
 class CCompiler(object):

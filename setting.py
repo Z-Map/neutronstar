@@ -11,6 +11,12 @@ class Setting(object):
 		self._mgr = mgr
 		self.key = key
 
+	def get(self, key="", default=None):
+		if self.key:
+			key = self.key + "." + key
+		if key:
+			return self._mgr._settings.get(key, default)
+		return default
 
 class SettingManager(object):
 	""" Setting manager class """
@@ -48,3 +54,6 @@ class SettingManager(object):
 	def Settings(self):
 		"""Access to sored settings"""
 		return Setting(self)
+
+	def from_namespace(self, namespace):
+		return Setting(self, key = namespace)

@@ -2,6 +2,7 @@
 """ Source module
 """
 
+import re
 import os.path as Path
 from os import scandir as ScanDir
 
@@ -10,7 +11,9 @@ from .setting import SettingManager as SMgr
 class Source(object):
 	"""docstring for Source."""
 
-	def __init__(self, name, directory = None, namespace = None, ext = None, settings=None):
+	def __init__(self, name,
+		directory = None, namespace = None, ext = None,
+		settings = None):
 		super(Source, self).__init__()
 		if settings is None:
 			settings = SMgr.GetCurrent().Settings
@@ -33,8 +36,10 @@ class Sources(Source):
 
 	def __init__(self, directory, names = None,
 				 basedir = None, namespace = None,
-				 settings=None):
-		super(Sources, self).__init__(Path.split(directory)[1], directory, namespace = namespace, settings=settings)
+				 settings=None, name=None):
+		if name is None:
+			name = Path.split(directory)[1]
+		super(Sources, self).__init__(name, directory, namespace = namespace, settings=settings)
 		self.basedir = basedir
 		if callable(names):
 			names = names(self)
@@ -64,14 +69,14 @@ class SourceDir(Sources):
 	"""docstring for SourceDir."""
 
 	@staticmethod
-	def _RecursiveFind(adir, num, fifltr = None):
+	def _RecursiveFind(adir, num, f_filtr = None):
 		dlst = []
 		ret = []
 		with ScanDir(adir) as it:
 			for entry in it:
 				if entry.is_dir():
 					dlst.append(entry.path)
-				elif not fifltr or filter.fullmatch(entry.name):
+				elif not fifltr or f_filter(entry.name):
 					ret.append(entry.path)
 		if num != 0:
 			for aodir in dlst:
@@ -79,14 +84,34 @@ class SourceDir(Sources):
 					Path.join(adir, aodir), num - 1, fifltr))
 		return ret
 
-	def __init__(self, directory,
-				 recursive=False, path_filter=None,
-				 basedir = None, namespace = None,
-				 settings = None):
-
+	@staticmethod
+	def get_names(self):
+		path_filter = self.path_filter
 		if path_filter is not None:
+			if isinstance(path_filter, re.Pattern):
+				path_filter = path_filter.fullmatch
+			if not callable(path_filter):
+				raise Exception("Path filter is not callable")
+		if self.recursive:
+			if not isinstance(self.recursive, int):
+				self.recursive = self.settings.get("SourceDir.recursion.default", 32)
+		else:
+			self.recursive = 0
+		return SourceDir._RecursiveFind(self.basedir + self.directory, self.recursive, path_filter)
 
-		super(SourceDir, self).__init__(
-			Path.split(directory)[1], directory,
+	def __init__(self, directory,
+				 recursive = False, path_filter = None,
+				 basedir = None, namespace = None,
+				 settings = None, name=None):
+		if path_filter is not None:
+			if isinstance(path_filter, str):
+				path_filter = re.compile(path_filter)
+		self.recursive = recursive
+		self.path_filter = path_filter
+		super(SourceDir, self).__init__(directory, names=SourceDir.get_names,
 			basedir = basedir, namespace = namespace,
-			settings = settings)
+			settings = settings, name = name)
+
+	def refresh(self):
+		self._names = SourceDir.get_names(self)
+		return self
