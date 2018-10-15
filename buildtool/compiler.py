@@ -15,6 +15,15 @@ class Compiler(object):
 	def compile(self, source):
 		raise NotImplementedError("You need to use a valid compiler")
 
+class ClangCompiler(Compiler):
+
+	def __init__(self, name="clang", settings = None):
+		super(ClangCompiler, self).__init__(name, settings = settings)
+
+	def compile(self, source):
+		
+		return True
+
 class CCompiler(object):
 
 	FNAME = 0
