@@ -8,6 +8,7 @@ try:
 	from os import scandir as ScanDir
 except ImportError:
 	from os import listdir as ScanDir
+from os import getcwd
 
 from .setting import SettingManager as SMgr
 
@@ -30,8 +31,18 @@ class Source(object):
 		self.ext = ext
 		self.smgr = settings
 
+	def __len__(self):
+		return 1
+
 	def GetAll(self):
 		return [self]
+
+	def GetPath(self):
+		return Path.join(self.directory, ".".join([self.name, self.ext]))
+
+	def GetAbsPath(self):
+		return Path.join(self.smgr.get("source.basdir", getcwd()), self.GetPath())
+
 
 
 class Sources(Source):
@@ -52,6 +63,9 @@ class Sources(Source):
 			self._names = list(names)
 		else:
 			self._names = names
+
+	def __len__(self):
+		return len(self._names)
 
 	def SourceFromName(self, name):
 		return Source(name,
@@ -112,6 +126,12 @@ class SourceDir(Sources):
 			basedir = basedir, namespace = namespace,
 			settings = settings, name = name)
 
+	def __len__(self):
+		if not self._names:
+			self._names = SourceDir.get_names(self)
+		return len(self._names)
+
 	def GetAll(self):
-		self._names = SourceDir.get_names(self)
+		if not self._names:
+			self._names = SourceDir.get_names(self)
 		return super().GetAll()

@@ -2,27 +2,55 @@
 """ Compiler module
 """
 
+import subprocess
 import os.path as Path
+from .setting import SettingManager as SMgr
 
 class Compiler(object):
 
 	def __init__(self, name, settings = None):
 		if settings is None:
-			settings = SMgr.GetCurrent().Settings
+			settings = SMgr.GetCurrent().from_namespace("compiler")
 		self.smgr = settings
 		self.name = name
 
-	def compile(self, source):
+	def _generate_args(self, source):
+		args = []
+		for asrc in source.GettALl():
+			args.append(asrc.GetAbsPath())
+		return args
+
+	def _compile(self, args):
 		raise NotImplementedError("You need to use a valid compiler")
+
+	def compile(self, source, cmd_override=None):
+		args = self._generate_args(source)
+		return cmd_override(args) if callable(cmd_override) else self._compile(args)
+
 
 class ClangCompiler(Compiler):
 
-	def __init__(self, name="clang", settings = None):
+	def __init__(self, name="clang", cmd="clang", settings = None):
+		if settings is None:
+			settings = SMgr.GetCurrent().from_namespace("compiler.clang")
 		super(ClangCompiler, self).__init__(name, settings = settings)
+		self.cmd = cmd
 
-	def compile(self, source):
-		
+	def _generate_args(self, source):
+		self.smgr.get("")
+		args = []
+		for asrc in source.GettALl():
+			args.append(asrc.GetAbsPath())
+		return args
+
+	def _compile(self, args):
+		try:
+			ret = subprocess.run([self.cmd] + args, stdout=subprocess.PIPE)
+		except subprocess.CalledProcessError as err:
+			print("Error ", err.returncode, " during compiling")
+			return False
 		return True
+
 
 class CCompiler(object):
 
