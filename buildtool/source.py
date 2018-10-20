@@ -41,8 +41,15 @@ class Source(object):
 		return Path.join(self.directory, ".".join([self.name, self.ext]))
 
 	def GetAbsPath(self):
-		return Path.join(self.smgr.get("source.basdir", getcwd()), self.GetPath())
+		return Path.join(self.smgr.get("source.basedir", getcwd()), self.GetPath())
 
+	def GetBuildPath(self):
+		return Path.join(self.smgr.get("source.build.dir", getcwd()),
+						 Path.join(*self.namespace.split('.')),
+						 ".".join([self.name, self.smgr.get("source.build.ext.{}".format(self.ext), "build")]))
+
+	def GetAbsBuildPath(self):
+		return Path.join(self.smgr.get("source.basedir", getcwd()), self.GetBuildPath())
 
 
 class Sources(Source):

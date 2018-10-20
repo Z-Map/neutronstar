@@ -37,10 +37,12 @@ class ClangCompiler(Compiler):
 		self.cmd = cmd
 
 	def _generate_args(self, source):
-		self.smgr.get("")
+		compile_type =self.smgr.get("compilation_type", "obj")
 		args = []
-		for asrc in source.GettALl():
-			args.append(asrc.GetAbsPath())
+		if compile_type == "obj":
+			for asrc in source.GettALl():
+				args.append(asrc.GetAbsPath())
+
 		return args
 
 	def _compile(self, args):
