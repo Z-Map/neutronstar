@@ -44,9 +44,11 @@ class Source(object):
 		return Path.join(self.smgr.get("source.basedir", getcwd()), self.GetPath())
 
 	def GetBuildPath(self):
-		return Path.join(self.smgr.get("source.build.dir", getcwd()),
-						 Path.join(*self.namespace.split('.')),
-						 ".".join([self.name, self.smgr.get("source.build.ext.{}".format(self.ext), "build")]))
+		path = [self.smgr.get("source.build.dir", "build")]
+		path += self.namespace.split('.')
+		ext = self.smgr.get("source.build.ext.{}".format(self.ext), "build")
+		path += [".".join([self.name, ext])]
+		return Path.join(*path)
 
 	def GetAbsBuildPath(self):
 		return Path.join(self.smgr.get("source.basedir", getcwd()), self.GetBuildPath())
@@ -57,7 +59,7 @@ class Sources(Source):
 
 	def __init__(self, directory, names = None,
 				 basedir = None, namespace = None,
-				 settings=None, name=None):
+				 settings = None, name = None):
 		if name is None:
 			name = Path.split(directory)[1]
 		super(Sources, self).__init__(name, directory, namespace = namespace, settings=settings)
@@ -88,6 +90,14 @@ class Sources(Source):
 			else:
 				ret.append(self.SourceFromName(k))
 		return ret
+
+	def GetBuildPath(self):
+		path = [self.smgr.get("source.build.dir", "build")]
+		path += self.namespace.split('.')
+		ext = self.smgr.get("source.build.ext", None)
+		name = self.name + ("." + ext if ext is not None else "")
+		path += [name]
+		return Path.join(*path)
 
 class SourceDir(Sources):
 	"""docstring for SourceDir."""
@@ -121,7 +131,7 @@ class SourceDir(Sources):
 	def __init__(self, directory,
 				 recursive = False, path_filter = None,
 				 basedir = None, namespace = None,
-				 settings = None, name=None):
+				 settings = None, name = None):
 		if path_filter is not None:
 			if isinstance(path_filter, str):
 				path_filter = re.compile(path_filter)

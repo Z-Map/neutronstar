@@ -17,15 +17,15 @@ class Compiler(object):
 	def _generate_args(self, source):
 		args = []
 		for asrc in source.GettALl():
-			args.append(asrc.GetAbsPath())
+			args.append(asrc.GetPath())
 		return args
 
-	def _compile(self, args):
+	def _compile(self, args, source):
 		raise NotImplementedError("You need to use a valid compiler")
 
 	def compile(self, source, cmd_override=None):
 		args = self._generate_args(source)
-		return cmd_override(args) if callable(cmd_override) else self._compile(args)
+		return cmd_override(args, source) if callable(cmd_override) else self._compile(args, source)
 
 
 class ClangCompiler(Compiler):
@@ -40,16 +40,27 @@ class ClangCompiler(Compiler):
 		compile_type =self.smgr.get("compilation_type", "obj")
 		args = []
 		if compile_type == "obj":
+			args = ["-c"]
 			for asrc in source.GettALl():
-				args.append(asrc.GetAbsPath())
+				args.append(asrc.GetPath())
+			if len(source) == 1:
+				args += ["-o", asrc.GetBuildPath()]
+		elif compile_type == "exe":
+			args = ["-o", source.GetBuildPath()]
+			for asrc in source.GettALl():
+				args.append(asrc.GetPath())
+		elif compile_type == "lib":
+			for asrc in source.GettALl():
+				args.append(asrc.GetPath())
+			args += ["-shared", "-o", source.GetBuildPath()]
 
 		return args
 
-	def _compile(self, args):
+	def _compile(self, args, source):
 		try:
 			ret = subprocess.run([self.cmd] + args, stdout=subprocess.PIPE)
 		except subprocess.CalledProcessError as err:
-			print("Error ", err.returncode, " during compiling")
+			print("Error ", err.returncode, " during compiling ", source.name)
 			return False
 		return True
 
