@@ -20,7 +20,7 @@ class Source(object):
 		settings = None):
 		super(Source, self).__init__()
 		if settings is None:
-			settings = SMgr.GetCurrent().Settings
+			settings = SMgr.GetCurrent().from_namespace("source")
 		if directory is None:
 			directory, name = Path.split(name)
 		if ext is None:
@@ -41,17 +41,17 @@ class Source(object):
 		return Path.join(self.directory, ".".join([self.name, self.ext]))
 
 	def GetAbsPath(self):
-		return Path.join(self.smgr.get("source.basedir", getcwd()), self.GetPath())
+		return Path.join(self.smgr.get("basedir", getcwd()), self.GetPath())
 
 	def GetBuildPath(self):
-		path = [self.smgr.get("source.build.dir", "build")]
+		path = [self.smgr.get("build.dir", "build")]
 		path += self.namespace.split('.')
-		ext = self.smgr.get("source.build.ext.{}".format(self.ext), "build")
+		ext = self.smgr.get("build.ext.{}".format(self.ext), "build")
 		path += [".".join([self.name, ext])]
 		return Path.join(*path)
 
 	def GetAbsBuildPath(self):
-		return Path.join(self.smgr.get("source.basedir", getcwd()), self.GetBuildPath())
+		return Path.join(self.smgr.get("basedir", getcwd()), self.GetBuildPath())
 
 
 class Sources(Source):
@@ -92,9 +92,9 @@ class Sources(Source):
 		return ret
 
 	def GetBuildPath(self):
-		path = [self.smgr.get("source.build.dir", "build")]
+		path = [self.smgr.get("build.dir", "build")]
 		path += self.namespace.split('.')
-		ext = self.smgr.get("source.build.ext", None)
+		ext = self.smgr.get("build.ext", None)
 		name = self.name + ("." + ext if ext is not None else "")
 		path += [name]
 		return Path.join(*path)
@@ -122,7 +122,7 @@ class SourceDir(Sources):
 	def get_names(self):
 		recursive = self.recursive
 		if recursive and not isinstance(recursive, int):
-			recursive = self.settings.get("SourceDir.recursion.default", 32)
+			recursive = self.settings.get_abs("SourceDir.recursion.default", 32)
 		path_filter = self.path_filter
 		if isinstance(path_filter, re.Pattern):
 			path_filter = path_filter.fullmatch

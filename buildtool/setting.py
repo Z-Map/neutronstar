@@ -40,6 +40,9 @@ class Setting(object):
 			key = self.key + "." + key
 		return self._mgr.get(key, default)
 
+	def get_abs(self, key="", default=UNSET):
+		return self._mgr.get(key, default)
+
 class SettingManager(object):
 	""" Setting manager class """
 
