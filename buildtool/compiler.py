@@ -4,6 +4,8 @@
 
 import subprocess
 import os.path as Path
+import os
+
 from .setting import SettingManager as SMgr
 
 class Compiler(object):
@@ -16,7 +18,7 @@ class Compiler(object):
 
 	def _generate_args(self, source):
 		args = []
-		for asrc in source.GettALl():
+		for asrc in source.GetAll():
 			args.append(asrc.GetPath())
 		return args
 
@@ -44,12 +46,12 @@ class ClangCompiler(Compiler):
 			args = ["-c"]
 			if as_lib:
 				args.append("-fPIC")
-			for asrc in source.GettALl():
+			for asrc in source.GetAll():
 				args.append(asrc.GetPath())
 			if len(source) == 1:
 				args += ["-o", asrc.GetBuildPath()]
 		elif compile_type == "exe":
-			for asrc in source.GettALl():
+			for asrc in source.GetAll():
 				args.append(asrc.GetPath())
 			if as_lib:
 				args += ["-shared", "-o", source.GetBuildPath()]
@@ -58,8 +60,10 @@ class ClangCompiler(Compiler):
 		return args
 
 	def _compile(self, args, source):
+		print("cmd ", " ".join([self.cmd] + args))
+		print(os.getcwd())
 		try:
-			ret = subprocess.run([self.cmd] + args, stdout=subprocess.PIPE)
+			ret = subprocess.run([self.cmd] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		except subprocess.CalledProcessError as err:
 			print("Error ", err.returncode, " during compiling ", source.name)
 			return False

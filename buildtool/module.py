@@ -4,26 +4,31 @@
 
 import os.path as Path
 
+from .error import TaskError
+from .toolchain import Toolchain
+
 class Module(object):
 	"""Module module"""
-	def __init__(self, name, slots=None):
+	def __init__(self, name, **kwargs):
 		super(Module, self).__init__()
 		self.name = name
-		self.slots = {} if slots is None else {k:(None,None) for k in slots}
+		self.vars = kwargs.copy()
+		self.toolchains = Toolchain(name)
 
 	def __str__(self):
 		return 'Module("{}", [{}])'.format(
 			self.name,
-			', '.join(['"{}"'.format(k) for k in self.slots.keys()]))
+			', '.join(['"{}":"{}"'.format(k, v) for k,v in self.vars.items()]))
 
-	def bind(self, slot_name, src=None, toolchain=None):
-		if src is None:
-			src = self.slots.get(slot_name, (None, None))[0]
-		if toolchain is None:
-			toolchain = self.slots.get(slot_name, (None, None))[1]
-		self.slots[slot_name] = (src, toolchain)
+	def add_toolchain(self, toolchain):
+		self.toolchains.add(toolchain)
 		return self
 
-	def build(self, target):
-		
-		return True
+	def build(self, context):
+		ctx = context
+		ctx.update(self.vars)
+		state = True
+		state = self.toolchains(ctx)
+		if not state:
+			state = TaskError(type(self), self.name, state)
+		return state

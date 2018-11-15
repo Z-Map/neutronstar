@@ -4,6 +4,7 @@
 
 import os.path as Path
 
+from .context import *
 from .toolchain import *
 from .target import *
 from .module import *
@@ -25,6 +26,7 @@ class Project(object):
 			except Exception as e:
 				raise Exception("Error when creating toolchain {}".format(str(tname))) from e
 		self.toolchains.append(tc)
+		return tc
 
 	def add_target(self, tgt, *args, **kwargs):
 		if not isinstance(tgt, Target):
@@ -34,6 +36,7 @@ class Project(object):
 			except Exception as e:
 				raise Exception("Error when creating target {}".format(str(tname))) from e
 		self.targets.append(tgt)
+		return tgt
 
 	def add_module(self, mod, *args, **kwargs):
 		if not isinstance(mod, Module):
@@ -43,6 +46,7 @@ class Project(object):
 			except Exception as e:
 				raise Exception("Error when creating module {}".format(str(modname))) from e
 		self.modules.append(mod)
+		return mod
 
 	def display(self):
 		print('Project "{name}"\n'.format(name=self.name))
@@ -71,3 +75,8 @@ class Project(object):
 		else:
 			print(" " * pading, "No module in the project")
 		pading -= 1
+
+	def build(self):
+		ctx = Context()
+		for mod in self.modules:
+			print(mod.build(ctx))

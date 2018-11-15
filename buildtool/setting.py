@@ -2,6 +2,7 @@
 """ Setting module
 """
 
+import uuid
 import os.path as Path
 
 class SettingNamespace(dict):
@@ -64,6 +65,8 @@ class SettingManager(object):
 		self._settings = {}
 		for k,v in kwargs.items():
 			self._settings[k] = v
+		self._override_states = {}
+		self._override_settings = {}
 
 	def __getitem__(self, key):
 		return self._settings[key]
@@ -77,6 +80,8 @@ class SettingManager(object):
 
 	def get(self, key, default=Setting.UNSET):
 		if key:
+			if key in self._override_settings:
+				return self._override_settings[key]
 			path = str(key).split('.')
 			key = path[-1]
 			path = path[:-1]
@@ -91,6 +96,8 @@ class SettingManager(object):
 					else:
 						target_dict[ns] = SettingNamespace()
 						target_dict = target_dict[ns]
+			if key not in target_dict:
+				target_dict[key] = default
 			return target_dict[key]
 		else:
 			return self._settings
@@ -100,5 +107,33 @@ class SettingManager(object):
 		"""Access to sored settings"""
 		return Setting(self)
 
+	@property
+	def Settings(self):
+		"""Access to sored settings"""
+		return self._override_settings
+
 	def from_namespace(self, namespace):
 		return Setting(self, key = namespace)
+
+	def save_override(self):
+		key = uuid.uuid1()
+		self._override_states[key] = self._override_settings
+		self._override_settings = self._override_settings.copy()
+		return key
+
+	def restore_override(self, key):
+		if key in self._override_states:
+			self._override_settings = self._override_states[key]
+			del self._override_states[key]
+			return True
+		return False
+
+	def discard_override(self, key=None):
+		if key is None:
+			if self._override_settings:
+				self._override_settings = {}
+				return True
+		elif key in self._override_states:
+			del self._override_states[key]
+			return True
+		return False

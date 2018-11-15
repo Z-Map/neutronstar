@@ -25,6 +25,7 @@ class Source(object):
 			directory, name = Path.split(name)
 		if ext is None:
 			name, ext = Path.splitext(name)
+			ext = ext.replace(".", "")
 		self.name = name
 		self.directory = directory
 		self.namespace = namespace
@@ -33,6 +34,9 @@ class Source(object):
 
 	def __len__(self):
 		return 1
+
+	def __str__(self):
+		return self.name
 
 	def GetAll(self):
 		return [self]
@@ -45,7 +49,8 @@ class Source(object):
 
 	def GetBuildPath(self):
 		path = [self.smgr.get("build.dir", "build")]
-		path += self.namespace.split('.')
+		if self.namespace is not None:
+			path += self.namespace.split('.')
 		ext = self.smgr.get("build.ext.{}".format(self.ext), "build")
 		path += [".".join([self.name, ext])]
 		return Path.join(*path)
@@ -58,11 +63,13 @@ class Sources(Source):
 	"""docstring for Sources."""
 
 	def __init__(self, directory, names = None,
-				 basedir = None, namespace = None,
+				 basedir = "", namespace = None,
 				 settings = None, name = None):
 		if name is None:
 			name = Path.split(directory)[1]
 		super(Sources, self).__init__(name, directory, namespace = namespace, settings=settings)
+		if basedir is None:
+			basedir = ""
 		self.basedir = basedir
 		if callable(names):
 			names = names(self)
@@ -126,7 +133,9 @@ class SourceDir(Sources):
 		path_filter = self.path_filter
 		if isinstance(path_filter, re.Pattern):
 			path_filter = path_filter.fullmatch
-		return SourceDir._RecursiveFind(self.basedir + self.directory, self.recursive, path_filter)
+		ret = [n[len(self.basedir + self.directory) + 1:] for n in SourceDir._RecursiveFind(self.basedir + self.directory, self.recursive, path_filter)]
+		print(ret)
+		return ret
 
 	def __init__(self, directory,
 				 recursive = False, path_filter = None,
