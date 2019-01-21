@@ -28,6 +28,7 @@ class Module(object):
 		ctx = context
 		ctx.update(self.vars)
 		state = True
+		print("Compile sources for module", self.name)
 		state = self.toolchains(ctx)
 		if not state:
 			state = TaskError(type(self), self.name, state)

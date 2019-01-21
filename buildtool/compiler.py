@@ -16,18 +16,18 @@ class Compiler(object):
 		self.smgr = settings
 		self.name = name
 
-	def _generate_args(self, source):
+	def _generate_args(self, source, context):
 		args = []
 		for asrc in source.GetAll():
 			args.append(asrc.GetPath())
 		return args
 
-	def _compile(self, args, source):
+	def _compile(self, args, source, context):
 		raise NotImplementedError("You need to use a valid compiler")
 
-	def compile(self, source, cmd_override=None):
-		args = self._generate_args(source)
-		return cmd_override(args, source) if callable(cmd_override) else self._compile(args, source)
+	def compile(self, source, context, cmd_override=None):
+		args = self._generate_args(source, context)
+		return cmd_override(args, source, context) if callable(cmd_override) else self._compile(args, source, context)
 
 
 class ClangCompiler(Compiler):
@@ -38,9 +38,9 @@ class ClangCompiler(Compiler):
 		super(ClangCompiler, self).__init__(name, settings = settings)
 		self.cmd = cmd
 
-	def _generate_args(self, source):
-		compile_type =self.smgr.get("compilation_type", "obj")
-		as_lib =self.smgr.get("library", False)
+	def _generate_args(self, source, context):
+		compile_type = self.smgr.get("compilation_type", "obj")
+		as_lib = self.smgr.get("library", False)
 		args = []
 		if compile_type == "obj":
 			args = ["-c"]
@@ -59,12 +59,17 @@ class ClangCompiler(Compiler):
 				args += ["-o", source.GetBuildPath()]
 		return args
 
-	def _compile(self, args, source):
-		print("cmd ", " ".join([self.cmd] + args))
-		print(os.getcwd())
+	def _compile(self, args, source, context):
 		try:
-			ret = subprocess.run([self.cmd] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			ret = subprocess.run([self.cmd] + args, capture_output=True, text=True)
 		except subprocess.CalledProcessError as err:
 			print("Error ", err.returncode, " during compiling ", source.name)
 			return False
+		else:
+			if ret.returncode == 0:
+				print(ret.stdout)
+			else:
+				print(ret.stdout)
+				print(ret.stderr)
+				return False
 		return True

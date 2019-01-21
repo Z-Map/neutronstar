@@ -78,5 +78,8 @@ class Project(object):
 
 	def build(self):
 		ctx = Context()
+		ret = True
 		for mod in self.modules:
-			print(mod.build(ctx))
+			ret = mod.build(ctx)
+			if not ret:
+				raise ret

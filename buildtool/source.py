@@ -31,6 +31,7 @@ class Source(object):
 		self.namespace = namespace
 		self.ext = ext
 		self.smgr = settings
+		self.smgr.get("basedir", getcwd())
 
 	def __len__(self):
 		return 1
@@ -85,7 +86,7 @@ class Sources(Source):
 
 	def SourceFromName(self, name):
 		return Source(name,
-			directory = self.basedir + self.directory,
+			directory = Path.join(self.basedir, self.directory),
 			namespace = (None if self.namespace is None
 				else self.namespace + '.' + self.name))
 
@@ -134,7 +135,6 @@ class SourceDir(Sources):
 		if isinstance(path_filter, re.Pattern):
 			path_filter = path_filter.fullmatch
 		ret = [n[len(self.basedir + self.directory) + 1:] for n in SourceDir._RecursiveFind(self.basedir + self.directory, self.recursive, path_filter)]
-		print(ret)
 		return ret
 
 	def __init__(self, directory,

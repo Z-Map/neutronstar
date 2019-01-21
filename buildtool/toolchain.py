@@ -19,7 +19,7 @@ class Toolchain(object):
 	def __call__(self, context):
 		return self.build(context)
 
-	def __len__(self, context):
+	def __len__(self):
 		return len(self.chain)
 
 	def __add__(self, val):
@@ -122,13 +122,17 @@ class CompileToolchain(Toolchain):
 		else:
 			self.src_names = tuple(sources_names)
 
+	def copy(self):
+		ntc = CompileToolchain(self.compiler, name=self.name, sources_names=self.src_names)
+		ntc.chain = list(self.chain)
+		return ntc
+
 	def gathering_sources(self, context):
 		srcs = []
 		for n in self.src_names:
 			s = context.get(n)
 			if s:
 				srcs.append(s)
-		print("gathering ", srcs, " from ", self.src_names)
 		if len(srcs) == 1 and isinstance(srcs[0], Sources):
 			srcs = srcs[0]
 		else:
@@ -137,10 +141,10 @@ class CompileToolchain(Toolchain):
 		return True
 
 	def compile(self, context):
-		print("compile ", context.sources)
+		ret = True
 		if context.sources:
-			self.compiler.compile(context.sources)
-		return True
+			ret = self.compiler.compile(context.sources, context)
+		return ret
 
 	def build(self, context):
 		state = True
@@ -155,7 +159,43 @@ class CToolchain(CompileToolchain):
 	"""Toolchain de compilation C"""
 
 	def __init__(self, compiler=None, name="C toolchain",
-		sources_names=None):
+		sources_names=None, headers_names=None,
+		unique_o=False, library_mode=False):
 		if compiler is None:
 			compiler = ClangCompiler()
 		super(CToolchain, self).__init__(compiler, name=name, sources_names=sources_names)
+		self.chain = [self.gathering_headers] + self.chain
+		self.unique_o = unique_o
+		self.library_mode = library_mode
+		if headers_names is None:
+			self.headers_names = ("HEADERS",)
+		elif isinstance(headers_names, str):
+			self.headers_names = (headers_names,)
+		else:
+			self.headers_names = tuple(headers_names)
+
+	def copy(self):
+		ntc = CToolchain(self.compiler, name=self.name,
+			sources_names=self.src_names, headers_names=self.headers_names,
+			unique_o=self.unique_o, library_mode=self.library_mode)
+		ntc.chain = list(self.chain)
+		return ntc
+
+	def gathering_headers(self, context):
+		headers = []
+		for n in self.headers_names:
+			h = context.get(n)
+			if h:
+				headers.append(h)
+		if len(headers) == 1 and isinstance(headers[0], Sources):
+			headers = headers[0]
+		else:
+			headers = Sources("", names=headers)
+		context.headers = headers
+		return True
+
+	def compile(self, context):
+		ret = True
+		if context.sources:
+			ret = self.compiler.compile(context.sources, context)
+		return ret
